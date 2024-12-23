@@ -1,8 +1,9 @@
 import pandas as pd
-
+import imdb
+ia = imdb.Cinemagoer()
 # Load the CSV file
 df = pd.read_csv('data/watchlist.csv')
-
+"""
 # Insights
 print("\nINSIGHTS:")
 
@@ -66,3 +67,47 @@ if 'Date Rated' in df.columns:
     most_recent_watched = df.sort_values('Date Rated', ascending=False).head(5)
     print("\nMost Recently Rated Titles:")
     print(most_recent_watched[['Title', 'Date Rated', 'Your Rating']])
+"""
+
+
+# Check if the URL column exists
+if 'URL' in df.columns:
+    # Extract the last part of the URL (e.g., the IMDb ID or slug)
+    df['URL_Last_Part'] = df['URL'].str.split('/').str[-2].str[2:]
+    
+    actors_info = []
+    writers_info = []
+    movie_info = []
+    
+    for movie in df['URL_Last_Part']:
+        if movie == '':
+            print("Movie not found")
+            movie_info.append(None)
+        else:
+            movie_info.append(ia.get_movie(movie))
+    
+    for movie in movie_info:
+        if movie is None:
+            actors_info.append([])
+            writers_info.append([])
+            continue
+        
+        # Extract actors and writers
+        actors = movie.get('cast', [])
+        writers = movie.get('writers', [])
+        
+        # Create lists of actor and writer IDs
+        actors_list = [actor.personID for actor in actors]
+        writers_list = [writer.personID for writer in writers]
+        
+        actors_info.append(actors_list)
+        writers_info.append(writers_list)
+    
+    # Add actor and writer info to the DataFrame
+    df['Actors'] = actors_info
+    df['Writers'] = writers_info
+
+    # Display the updated DataFrame
+    print("\nUpdated DataFrame with Actors and Writers:")
+    print(df.head())
+    df.to_csv('data/watchlist_with_actors_writers.csv', index=False)
